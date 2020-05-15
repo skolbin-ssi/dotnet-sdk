@@ -50,21 +50,12 @@ namespace GlobalPayments.Api.Entities {
         /// <summary>
         /// Indicates a HeeartSIP iSC250 device.
         /// </summary>
-        HPA_ISC250
-    }
+        HPA_ISC250,
 
-    /// <summary>
-    /// Indicates the chip condition for failed EMV chip reads
-    /// </summary>
-    public enum EmvChipCondition {
         /// <summary>
-        /// Use this condition type when the current chip read failed but the previous transaction on the same device was either a successful chip read or was not a chip transaction.
+        /// Indicates a genius terminal
         /// </summary>
-        ChipFailedPreviousSuccess,
-        /// <summary>
-        /// Use this condition type when the current chip read failed and the previous transaction on the same device was also an unsuccessful chip read.
-        /// </summary>
-        ChipFailedPreviousFailed
+        GENIUS
     }
 
     /// <summary>
@@ -190,178 +181,7 @@ namespace GlobalPayments.Api.Entities {
         /// Indicates manual entry.
         /// </summary>
         Manual
-    }
-
-    /// <summary>
-    /// Indicates the transaction type.
-    /// </summary>
-    [Flags]
-    public enum TransactionType {
-        /// <summary>
-        /// Indicates a decline.
-        /// </summary>
-        Decline = 0,
-
-        /// <summary>
-        /// Indicates an account verify.
-        /// </summary>
-        Verify = 1 << 0,
-
-        /// <summary>
-        /// Indicates a capture/add to batch.
-        /// </summary>
-        Capture = 1 << 1,
-
-        /// <summary>
-        /// Indicates an authorization without capture.
-        /// </summary>
-        Auth = 1 << 2,
-
-        /// <summary>
-        /// Indicates a refund/return.
-        /// </summary>
-        Refund = 1 << 3,
-
-        /// <summary>
-        /// Indicates a reversal.
-        /// </summary>
-        Reversal = 1 << 4,
-
-        /// <summary>
-        /// Indicates a sale/charge/authorization with capture.
-        /// </summary>
-        Sale = 1 << 5,
-
-        /// <summary>
-        /// Indicates an edit.
-        /// </summary>
-        Edit = 1 << 6,
-
-        /// <summary>
-        /// Indicates a void.
-        /// </summary>
-        Void = 1 << 7,
-
-        /// <summary>
-        /// Indicates value should be added.
-        /// </summary>
-        AddValue = 1 << 8,
-
-        /// <summary>
-        /// Indicates a balance inquiry.
-        /// </summary>
-        Balance = 1 << 9,
-
-        /// <summary>
-        /// Indicates an activation.
-        /// </summary>
-        Activate = 1 << 10,
-
-        /// <summary>
-        /// Indicates an alias should be added.
-        /// </summary>
-        Alias = 1 << 11,
-
-        /// <summary>
-        /// Indicates the payment method should be replaced.
-        /// </summary>
-        Replace = 1 << 12,
-
-        /// <summary>
-        /// Indicates a reward.
-        /// </summary>
-        Reward = 1 << 13,
-
-        /// <summary>
-        /// Indicates a deactivation.
-        /// </summary>
-        Deactivate = 1 << 14,
-
-        /// <summary>
-        /// Indicates a batch close.
-        /// </summary>
-        BatchClose = 1 << 15,
-
-        /// <summary>
-        /// Indicates a resource should be created.
-        /// </summary>
-        Create = 1 << 16,
-
-        /// <summary>
-        /// Indicates a resource should be deleted.
-        /// </summary>
-        Delete = 1 << 17,
-
-        /// <summary>
-        /// Indicates a benefit withdrawal.
-        /// </summary>
-        BenefitWithdrawal = 1 << 18,
-
-        /// <summary>
-        /// Indicates a resource should be fetched.
-        /// </summary>
-        Fetch = 1 << 19,
-
-        /// <summary>
-        /// Indicates a resource type should be searched.
-        /// </summary>
-        Search = 1 << 20,
-
-        /// <summary>
-        /// Indicates a hold.
-        /// </summary>
-        Hold = 1 << 21,
-
-        /// <summary>
-        /// Indicates a release.
-        /// </summary>
-        Release = 1 << 22,
-
-        /// <summary>
-        /// Indicates a verify 3d Secure enrollment transaction
-        /// </summary>
-        VerifyEnrolled = 1 << 23,
-
-        /// <summary>
-        /// Indicates a verify 3d secure verify signature transaction
-        /// </summary>
-        VerifySignature = 1 << 24,
-
-        /// <summary>
-        /// Indcates a TokenUpdateExpiry Transaction
-        /// </summary>
-        TokenUpdate = 1 << 25,
-
-        /// <summary>
-        /// Indicates a Token Delete Transaction
-        /// </summary>
-        TokenDelete = 1 << 26,
-
-        /// <summary>
-        /// Indicates a verify authentication 3DS2 call
-        /// </summary>
-        VerifyAuthentication = 1 << 27,
-
-        /// <summary>
-        /// Indicates an Initiate Authentication 3DS2 call
-        /// </summary>
-        InitiateAuthentication = 1 << 28,
-
-        /// <summary>
-        /// 
-        /// </summary>
-        DataCollect = 1 << 29,
-
-        /// <summary>
-        /// 
-        /// </summary>
-        PreAuthCompletion = 1 << 30,
-
-        /// <summary>
-        /// 
-        /// </summary>
-        DccRateLookup = 1 << 31
-    }
+    }    
 
     /// <summary>
     /// Indicates if a transaction should be specialized.
@@ -390,7 +210,7 @@ namespace GlobalPayments.Api.Entities {
         /// <summary>
         /// Indicates a commercial request transaction.
         /// </summary>
-        LevelII = 1 << 4,
+        Level_II = 1 << 4,
 
         /// <summary>
         /// Indicates a fraud decline transaction.
@@ -430,7 +250,12 @@ namespace GlobalPayments.Api.Entities {
         /// <summary>
         /// Indicates a mobile transaction.
         /// </summary>
-        EncryptedMobile = 1 << 12
+        EncryptedMobile = 1 << 12,
+
+        /// <summary>
+        /// Indicates a level II transaction
+        /// </summary>
+        Level_III = 1 << 13
     }
 
     /// <summary>
@@ -1111,18 +936,5 @@ namespace GlobalPayments.Api.Entities {
         One,
         Two,
         Any
-    }
-
-    public static class ServiceEndpoints {
-        public const string GLOBAL_ECOM_PRODUCTION = "https://api.realexpayments.com/epage-remote.cgi";
-        public const string GLOBAL_ECOM_TEST = "https://api.sandbox.realexpayments.com/epage-remote.cgi";
-        public const string PORTICO_PRODUCTION = "https://api2.heartlandportico.com";
-        public const string PORTICO_TEST = "https://cert.api2.heartlandportico.com";
-        public const string THREE_DS_AUTH_PRODUCTION = "https://api.globalpay-ecommerce.com/3ds2/";
-        public const string THREE_DS_AUTH_TEST = "https://api.sandbox.globalpay-ecommerce.com/3ds2/";
-        public const string PAYROLL_PRODUCTION = "https://taapi.heartlandpayrollonlinetest.com/PosWebUI";
-        public const string PAYROLL_TEST = "https://taapi.heartlandpayrollonlinetest.com/PosWebUI/Test/Test";
-        public const string TABLE_SERVICE_PRODUCTION = "https://www.freshtxt.com/api31/";
-        public const string TABLE_SERVICE_TEST = "https://www.freshtxt.com/api31/";
     }
 }
