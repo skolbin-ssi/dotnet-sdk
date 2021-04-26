@@ -18,12 +18,16 @@ namespace GlobalPayments.Api.Builders {
         internal AuthenticationRequestType AuthenticationRequestType { get; set; }
         internal Address BillingAddress { get; set; }
         internal BrowserData BrowserData { get; set; }
+        internal ChallengeRequestIndicator? ChallengeRequestIndicator { get; set; }
         internal string Currency { get; set; }
         internal string CustomerAccountId { get; set; }
         internal string CustomerAuthenticationData { get; set; }
         internal CustomerAuthenticationMethod? CustomerAuthenticationMethod { get; set; }
         internal DateTime? CustomerAuthenticationTimestamp { get; set; }
         internal string CustomerEmail { get; set; }
+        internal bool? DecoupledFlowRequest { get; set; }
+        internal int? DecoupledFlowTimeout { get; set; }
+        internal string DecoupledNotificationUrl { get; set; }
         internal string DeliveryEmail { get; set; }
         internal DeliveryTimeFrame? DeliveryTimeframe { get; set; }
         internal string EncodedData { get; set; }
@@ -33,11 +37,12 @@ namespace GlobalPayments.Api.Builders {
         internal decimal? GiftCardAmount { get; set; }
         internal string HomeCountryCode { get; set; }
         internal string HomeNumber { get; set; }
+        internal string IdempotencyKey { get; set; }
         internal int? MaxNumberOfInstallments { get; set; }
         internal int? MaximumTimeout { get; set; }
         internal MerchantDataCollection MerchantData { get; set; }
         internal MessageCategory MessageCategory { get; set; }
-        internal AuthenticationRequestType? MerchantInitiatedRequestType { get; set; }
+        internal MerchantInitiatedRequestType? MerchantInitiatedRequestType { get; set; }
         internal string MessageVersion { get; set; }
         internal MethodUrlCompletion MethodUrlCompletion { get; set; }
         internal string MobileCountryCode { get; set; }
@@ -83,6 +88,7 @@ namespace GlobalPayments.Api.Builders {
         internal ShippingMethod? ShippingMethod { get; set; }
         internal bool? ShippingNameMatchesCardHolderName { get; set; }
         internal ThreeDSecure ThreeDSecure { get; set; }
+        internal StoredCredentialInitiator? TransactionInitiator { get; set; }
         internal TransactionType TransactionType { get; set; }
         internal Secure3dVersion? Version {
             get {
@@ -92,6 +98,7 @@ namespace GlobalPayments.Api.Builders {
                 return null;
             }
         }
+        internal bool? WhitelistStatus { get; set; }
         internal string WorkCountryCode { get; set; }
         internal string WorkNumber { get; set; }
 
@@ -147,6 +154,10 @@ namespace GlobalPayments.Api.Builders {
             BrowserData = value;
             return this;
         }
+        public Secure3dBuilder WithChallengeRequestIndicator(ChallengeRequestIndicator value) {
+            ChallengeRequestIndicator = value;
+            return this;
+        }
         public Secure3dBuilder WithCurrency(string value) {
             Currency = value;
             return this;
@@ -169,6 +180,18 @@ namespace GlobalPayments.Api.Builders {
         }
         public Secure3dBuilder WithCustomerEmail(string value) {
             CustomerEmail = value;
+            return this;
+        }
+        public Secure3dBuilder WithDecoupledFlowRequest(bool value) {
+            DecoupledFlowRequest = value;
+            return this;
+        }
+        public Secure3dBuilder WithDecoupledFlowTimeout(int value) {
+            DecoupledFlowTimeout = value;
+            return this;
+        }
+        public Secure3dBuilder WithDecoupledNotificationUrl(string value) {
+            DecoupledNotificationUrl = value;
             return this;
         }
         public Secure3dBuilder WithDeliveryEmail(string deliveryEmail) {
@@ -204,6 +227,10 @@ namespace GlobalPayments.Api.Builders {
             HomeNumber = number;
             return this;
         }
+        public Secure3dBuilder WithIdempotencyKey(string value) {
+            IdempotencyKey = value;
+            return this;
+        }
         public Secure3dBuilder WithMaxNumberOfInstallments(int? maxNumberOfInstallments) {
             MaxNumberOfInstallments = maxNumberOfInstallments;
             return this;
@@ -227,7 +254,7 @@ namespace GlobalPayments.Api.Builders {
             MessageCategory = value;
             return this;
         }
-        public Secure3dBuilder WithMerchantInitiatedRequestType(AuthenticationRequestType merchantInitiatedRequestType) {
+        public Secure3dBuilder WithMerchantInitiatedRequestType(MerchantInitiatedRequestType merchantInitiatedRequestType) {
             MerchantInitiatedRequestType = merchantInitiatedRequestType;
             return this;
         }
@@ -385,8 +412,16 @@ namespace GlobalPayments.Api.Builders {
             ThreeDSecure = threeDSecure;
             return this;
         }
+        public Secure3dBuilder WithTransactionInitiator(StoredCredentialInitiator value) {
+            TransactionInitiator = value;
+            return this;
+        }
         public Secure3dBuilder WithTransactionType(TransactionType transactionType) {
             TransactionType = transactionType;
+            return this;
+        }
+        public Secure3dBuilder WithWhitelistStatus(bool whitelistStatus) {
+            WhitelistStatus = whitelistStatus;
             return this;
         }
         public Secure3dBuilder WithWorkNumber(string countryCode, string number) {
@@ -487,10 +522,8 @@ namespace GlobalPayments.Api.Builders {
                 }
                 catch (GatewayException exc) {
                     // check for not enrolled
-                    if (exc.ResponseCode != null) {
-                        if (exc.ResponseCode.Equals("110") && provider.Version.Equals(Secure3dVersion.One)) {
-                            return rvalue;
-                        }
+                    if ("110".Equals(exc.ResponseCode) && provider.Version.Equals(Secure3dVersion.One)) {
+                        return rvalue;
                     }
                     // check if we can downgrade
                     else if (canDowngrade && TransactionType.Equals(TransactionType.VerifyEnrolled)) {

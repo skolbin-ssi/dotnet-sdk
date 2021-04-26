@@ -10,7 +10,7 @@ namespace GlobalPayments.Api.Services {
         }
 
         public static TransactionReportBuilder<List<DepositSummary>> FindDeposits() {
-            return new TransactionReportBuilder<List<DepositSummary>>(ReportType.FindDepoits);
+            return new TransactionReportBuilder<List<DepositSummary>>(ReportType.FindDeposits);
         }
 
         public static TransactionReportBuilder<List<DisputeSummary>> FindDisputes() {
@@ -21,28 +21,50 @@ namespace GlobalPayments.Api.Services {
             return new TransactionReportBuilder<List<TransactionSummary>>(ReportType.Activity);
         }
 
-        //public static BatchReportBuilder BatchDetail() {
-        //    return new BatchReportBuilder(ReportType.BatchDetail);
-        //}
-
-        //public static BatchReportBuilder BatchHistory() {
-        //    return new BatchReportBuilder(ReportType.BatchHistory);
-        //}
-
-        //public static BatchReportBuilder BatchSummary() {
-        //    return new BatchReportBuilder(ReportType.BatchSummary);
-        //}
-
-        //public static ActivityReportBuilder OpenAuths() {
-        //    return new ActivityReportBuilder(ReportType.OpenAuths);
-        //}
-
-        //public static ActivityReportBuilder Search() {
-        //    return new ActivityReportBuilder(ReportType.Search);
-        //}
-
         public static TransactionReportBuilder<TransactionSummary> TransactionDetail(string transactionId) {
-            return new TransactionReportBuilder<TransactionSummary>(ReportType.TransactionDetail).WithTransactionId(transactionId);
+            return new TransactionReportBuilder<TransactionSummary>(ReportType.TransactionDetail)
+                .WithTransactionId(transactionId);
+        }
+
+        public static TransactionReportBuilder<DepositSummary> DepositDetail(string depositId) {
+            return new TransactionReportBuilder<DepositSummary>(ReportType.DepositDetail)
+                .WithDepositReference(depositId);
+        }
+
+        public static TransactionReportBuilder<DisputeSummary> DisputeDetail(string disputeId) {
+            return new TransactionReportBuilder<DisputeSummary>(ReportType.DisputeDetail)
+                .WithDisputeId(disputeId);
+        }
+
+        public static TransactionReportBuilder<DisputeSummary> SettlementDisputeDetail(string settlementDisputeId) {
+            return new TransactionReportBuilder<DisputeSummary>(ReportType.SettlementDisputeDetail)
+                .WithSettlementDisputeId(settlementDisputeId);
+        }
+
+        public static TransactionReportBuilder<PagedResult<TransactionSummary>> FindTransactionsPaged(int page, int pageSize, string transactionId = null) {
+            return new TransactionReportBuilder<PagedResult<TransactionSummary>>(ReportType.FindTransactionsPaged)
+                .WithTransactionId(transactionId)
+                .WithPaging(page, pageSize);
+        }
+
+        public static TransactionReportBuilder<PagedResult<TransactionSummary>> FindSettlementTransactionsPaged(int page, int pageSize) {
+            return new TransactionReportBuilder<PagedResult<TransactionSummary>>(ReportType.FindSettlementTransactionsPaged)
+                .WithPaging(page, pageSize);
+        }
+
+        public static TransactionReportBuilder<PagedResult<DepositSummary>> FindDepositsPaged(int page, int pageSize) {
+            return new TransactionReportBuilder<PagedResult<DepositSummary>>(ReportType.FindDepositsPaged)
+                .WithPaging(page, pageSize);
+        }
+
+        public static TransactionReportBuilder<PagedResult<DisputeSummary>> FindDisputesPaged(int page, int pageSize) {
+            return new TransactionReportBuilder<PagedResult<DisputeSummary>>(ReportType.FindDisputesPaged)
+                .WithPaging(page, pageSize);
+        }
+
+        public static TransactionReportBuilder<PagedResult<DisputeSummary>> FindSettlementDisputesPaged(int page, int pageSize) {
+            return new TransactionReportBuilder<PagedResult<DisputeSummary>>(ReportType.FindSettlementDisputesPaged)
+                .WithPaging(page, pageSize);
         }
     }
 }

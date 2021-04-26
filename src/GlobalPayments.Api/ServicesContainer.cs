@@ -8,6 +8,8 @@ namespace GlobalPayments.Api {
     public class ConfiguredServices : IDisposable {
         private Dictionary<Secure3dVersion, ISecure3dProvider> _secure3dProviders;
 
+        internal IPayFacProvider PayFacProvider { get; set; }
+
         internal IPaymentGateway GatewayConnector { get; set; }
 
         internal IRecurringService RecurringConnector { get; set; }
@@ -15,6 +17,8 @@ namespace GlobalPayments.Api {
         internal IReportingService ReportingService { get; set; }
 
         internal IDeviceInterface DeviceInterface { get; private set; }
+
+        internal IBillingProvider BillingProvider { get; set; }
 
         private DeviceController _deviceController;
         internal DeviceController DeviceController {
@@ -187,6 +191,21 @@ namespace GlobalPayments.Api {
                 throw new ConfigurationException(string.Format("Secure 3d is not configured for version {0}.", version));
             }
             throw new ConfigurationException("Secure 3d is not configured on the connector.");
+        }
+
+        internal IPayFacProvider GetPayFac(string configName) {
+            if (_configurations.ContainsKey(configName))
+                return _configurations[configName].PayFacProvider;
+            throw new ConfigurationException("PayFacProvider is not configured");
+        }
+
+        internal IBillingProvider GetBillingClient(string configName) {
+            if (_configurations.ContainsKey(configName))
+            {
+                return _configurations[configName].BillingProvider;
+            }
+
+            throw new ApiException("The specified configuration has not been configured for gateway processing.");
         }
 
         /// <summary>

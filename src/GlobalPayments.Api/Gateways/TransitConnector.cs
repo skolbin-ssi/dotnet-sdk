@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using GlobalPayments.Api.Builders;
 using GlobalPayments.Api.Entities;
 using GlobalPayments.Api.PaymentMethods;
@@ -54,24 +57,42 @@ namespace GlobalPayments.Api.Gateways {
                 .Set("tokenRequired", builder.RequestMultiUseToken ? "Y" : "N")
                 .Set("externalReferenceID", builder.ClientTransactionId);
 
-            request.Set("cardDataSource", MapCardDataSource(builder));
+            if (builder.RequestMultiUseToken) {
+                request.Set("cardOnFile", builder.RequestMultiUseToken ? "Y" : "N");
+            }
+
+            var cardDataSource = MapCardDataSource(builder);
+            request.Set("cardDataSource", cardDataSource);
             if (builder.PaymentMethod is ICardData card) {
                 string cardNumber = card.Number;
                 string cardDataInputMode = "ELECTRONIC_COMMERCE_NO_SECURITY_CHANNEL_ENCRYPTED_SET_WITHOUT_CARDHOLDER_CERTIFICATE";
                 if (card.CardType.Equals("Amex") && !string.IsNullOrEmpty(card.Cvn)) {
                     cardDataInputMode = "MANUALLY_ENTERED_WITH_KEYED_CID_AMEX_JCB";
+                } else if (AcceptorConfig.OperatingEnvironment == OperatingEnvironment.OnPremises_CardAcceptor_Attended) {
+                    cardDataInputMode = "KEY_ENTERED_INPUT";
                 }
 
                 if (card is ITokenizable token && token.Token != null) {
                     cardNumber = token.Token;
-                    //cardDataInputMode = "MERCHANT_INITIATED_TRANSACTION_CARD_CREDENTIAL_STORED_ON_FILE";
+                }
+
+                if (builder.StoredCredential != null && builder.StoredCredential.Initiator == StoredCredentialInitiator.Merchant) {
+                    cardDataInputMode = "MERCHANT_INITIATED_TRANSACTION_CARD_CREDENTIAL_STORED_ON_FILE";
+                    request.Set("cardOnFileTransactionIdentifier", builder.StoredCredential.SchemeId);
+                }
+
+                var cardholderPresentDetail = card.CardPresent ? "CARDHOLDER_PRESENT" : "CARDHOLDER_NOT_PRESENT_ELECTRONIC_COMMERCE";
+                if (cardDataSource == "MAIL") {
+                    cardholderPresentDetail = "CARDHOLDER_NOT_PRESENT_MAIL_TRANSACTION";
+                } else if (cardDataSource == "PHONE") {
+                    cardholderPresentDetail = "CARDHOLDER_NOT_PRESENT_PHONE_TRANSACTION";
                 }
 
                 request.Set("cardNumber", cardNumber)
                     .Set("expirationDate", card.ShortExpiry)
                     .Set("cvv2", card.Cvn)
                     .Set("cardPresentDetail", card.CardPresent ? "CARD_PRESENT" : "CARD_NOT_PRESENT")
-                    .Set("cardholderPresentDetail", card.CardPresent ? "CARDHOLDER_PRESENT" : "CARDHOLDER_NOT_PRESENT_ELECTRONIC_COMMERCE")
+                    .Set("cardholderPresentDetail", cardholderPresentDetail)
                     .Set("cardDataInputMode", cardDataInputMode)
                     .Set("cardholderAuthenticationMethod", "NOT_AUTHENTICATED")
                     .Set("authorizationIndicator", builder.AmountEstimated ? "PREAUTH" : "FINAL");
@@ -102,6 +123,15 @@ namespace GlobalPayments.Api.Gateways {
                     .Set("pinKsn", pinProtected.PinBlock.Substring(16));
             }
 
+            if (builder.PaymentMethod is Credit pm && pm.CardType.Equals("Discover") && (cardDataSource.Equals("INTERNET"))) {
+                request.Set("registeredUserIndicator", builder.LastRegisteredDate != default(DateTime) ? "YES" : "NO");
+                request.Set("lastRegisteredChangeDate", builder.LastRegisteredDate != default(DateTime) ? builder.LastRegisteredDate.ToString("MM/dd/yyyy") : "00/00/0000");
+            }
+
+            if (builder.Gratuity != null) {
+                request.Set("tip", builder.Gratuity.ToCurrencyString());
+            }
+
             #region 3DS 1/2
             if (builder.PaymentMethod is ISecure3d secure && secure.ThreeDSecure != null) {
                 if (secure.ThreeDSecure.Version.Equals(Secure3dVersion.One)) {
@@ -117,7 +147,7 @@ namespace GlobalPayments.Api.Gateways {
                     .Set("digitalPaymentCryptogram", secure.ThreeDSecure.AuthenticationValue)
                     .Set("securityProtocol", secure.ThreeDSecure.AuthenticationType)
                     .Set("ucafCollectionIndicator", EnumConverter.GetMapping(Target.Transit, secure.ThreeDSecure.UCAFIndicator));
-                    
+
             }
             #endregion
 
@@ -240,6 +270,7 @@ namespace GlobalPayments.Api.Gateways {
                 // transactionIntegrityClassification
                 // aci
                 // cardTransactionIdentifier
+                CardBrandTransactionId = root.GetValue<string>("cardTransactionIdentifier"),
                 // discountAmount
                 // discountType
                 // discountValue
@@ -301,6 +332,8 @@ namespace GlobalPayments.Api.Gateways {
                     return "CardAuthentication";
                 case TransactionType.Tokenize:
                     return "GetOnusToken";
+                case TransactionType.Refund:
+                    return "Return";
                 default:
                     throw new UnsupportedTransactionException();
             }
@@ -308,13 +341,26 @@ namespace GlobalPayments.Api.Gateways {
 
         private string MapCardDataSource(AuthorizationBuilder builder) {
             IPaymentMethod paymentMethod = builder.PaymentMethod;
+            EcommerceInfo ecommerceInfo = builder.EcommerceInfo;
 
             if (paymentMethod is ICardData card) {
-                if (card.ReaderPresent) {
-                    return card.CardPresent ? "MANUAL" : "PHONE|MAIL";
+                if (card.ReaderPresent && card.CardPresent) {
+                    return "MANUAL";
                 }
-                else {
-                    return card.CardPresent ? "MANUAL" : "INTERNET";
+
+                if (ecommerceInfo == null) {
+                    return "INTERNET";
+                }
+
+                switch (ecommerceInfo.Channel) {
+                    case EcommerceChannel.ECOM:
+                        return "INTERNET";
+                    case EcommerceChannel.MOTO:
+                        return "PHONE|MAIL";
+                    case EcommerceChannel.MAIL:
+                        return "MAIL";
+                    case EcommerceChannel.PHONE:
+                        return "PHONE";
                 }
             }
             else if (paymentMethod is ITrackData track) {
@@ -338,6 +384,60 @@ namespace GlobalPayments.Api.Gateways {
                 return "10";
             }
             else return input;
+        }
+
+        public string CreateManifest()
+        {
+            var dateFormatString = DateTime.Now.ToString("MMddyyyy");
+
+            var plainText = StringUtils.PadRight(MerchantId, 20, ' ') +
+                            StringUtils.PadRight(DeviceId, 24, ' ') +
+                            "000000000000" +
+                            StringUtils.PadRight(dateFormatString, 8, ' ');
+
+            var tempTransactionKey = TransactionKey.Substring(0, 16);
+
+            var byteArray = Encoding.UTF8.GetBytes(tempTransactionKey);
+            var encrypted = new byte[0];
+
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Padding = PaddingMode.None;
+                aesAlg.Mode = CipherMode.CBC;
+                aesAlg.BlockSize = 128;
+                aesAlg.KeySize = 128;
+                aesAlg.Key = byteArray;
+                aesAlg.IV = byteArray;
+                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+                using (MemoryStream msEncrypt = new MemoryStream())
+                {
+                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                        {
+                            swEncrypt.Write(plainText);
+                        }
+                        encrypted = msEncrypt.ToArray();
+                    }
+                }
+            }
+            var encryptedData = BitConverter.ToString(encrypted).ToLower().Replace("-", string.Empty);
+
+            var hashKey = HashHmac(TransactionKey, TransactionKey);
+
+            return hashKey.Substring(0, 4) + encryptedData + hashKey.Substring(hashKey.Length - 4, 4); ;
+        }
+
+        private string HashHmac(string message, string secret)
+        {
+            Encoding encoding = Encoding.UTF8;
+            using (HMACMD5 hmac = new HMACMD5(encoding.GetBytes(secret)))
+            {
+                var msg = encoding.GetBytes(message);
+                var hash = hmac.ComputeHash(msg);
+                return BitConverter.ToString(hash).ToLower().Replace("-", string.Empty);
+            }
         }
     }
 }

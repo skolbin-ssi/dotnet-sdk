@@ -1,6 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using GlobalPayments.Api.Entities;
+using GlobalPayments.Api.Entities.Billing;
+using GlobalPayments.Api.Network.Entities;
 using GlobalPayments.Api.PaymentMethods;
 
 namespace GlobalPayments.Api.Builders {
@@ -20,6 +22,9 @@ namespace GlobalPayments.Api.Builders {
         internal AutoSubstantiation AutoSubstantiation { get; set; }
         internal InquiryType? BalanceInquiryType { get; set; }
         internal Address BillingAddress { get; set; }
+        internal IEnumerable<Bill> Bills { get; set; }
+        internal Customer Customer { get; set; }
+        internal string CardBrandTransactionId { get; set; }
         internal decimal? CashBackAmount { get; set; }
         internal string ClientTransactionId { get; set; }
         internal CommercialData CommercialData { get; set; }
@@ -41,7 +46,9 @@ namespace GlobalPayments.Api.Builders {
         internal decimal? ConvenienceAmount { get; set; }
         internal decimal? ShippingAmt { get; set; }
         internal HostedPaymentData HostedPaymentData { get; set; }
+        internal string IdempotencyKey { get; set; }
         internal string InvoiceNumber { get; set; }
+        internal bool Level2Request { get; set; }
         internal LodgingData LodgingData { get; set; }
         internal string MessageAuthenticationCode { get; set; }
         internal List<string[]> MiscProductData { get; set; }
@@ -49,6 +56,7 @@ namespace GlobalPayments.Api.Builders {
         internal bool OneTimePayment { get; set; }
         internal string OrderId { get; set; }
         internal string PaymentApplicationVersion { get; set; }
+        internal TokenUsageMode? TokenUsageMode { get; set; }
         internal string PosSequenceNumber { get; set; }
         internal string ProductId { get; set; }
         internal RecurringSequence? RecurringSequence { get; set; }
@@ -60,14 +68,23 @@ namespace GlobalPayments.Api.Builders {
         internal Address ShippingAddress { get; set; }
         internal StoredCredential StoredCredential { get; set; }
         internal Dictionary<string, List<string[]>> SupplementaryData { get; set; }
+        internal decimal? SurchargeAmount { get; set; }
         internal string TagData { get; set; }
         internal string Timestamp { get; set; }
+        internal decimal FeeAmount { get; set; }
+        internal FeeType FeeType { get; set; }
+        internal string ShiftNumber { get; set; }
+        internal string ClerkId { get; set; }
+        internal string TransportData { get; set; }
+        internal StoredCredentialInitiator? TransactionInitiator { get; set; }
 
         internal bool HasEmvFallbackData {
             get {
                 return (EmvFallbackCondition != null || EmvLastChipRead != null || !string.IsNullOrEmpty(PaymentApplicationVersion));
             }
         }
+        internal EmvLastChipRead EmvChipCondition { get; set; }
+        internal DateTime LastRegisteredDate { get; set; }
 
         /// <summary>
         /// Indicates the type of account provided; see the associated Type enumerations for specific values supported.
@@ -179,6 +196,32 @@ namespace GlobalPayments.Api.Builders {
         }
 
         /// <summary>
+        /// Adds the bills to the transaction, where applicable
+        /// </summary>
+        /// <param name="values">The transaction's bills</param>
+        /// <returns>AuthorizationBuilder</returns>
+        public AuthorizationBuilder WithBills(params Bill[] values) {
+            Bills = values;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the customer, where applicable
+        /// </summary>
+        /// <param name="value">The transaction's customer</param>
+        /// <returns>AuthorizationBuilder</returns>
+        public AuthorizationBuilder WithCustomer(Customer value) {
+            Customer = value;
+            return this;
+        }
+
+        public AuthorizationBuilder WithCardBrandStorage(StoredCredentialInitiator transactionInitiator, string value = null) {
+            TransactionInitiator = transactionInitiator;
+            CardBrandTransactionId = value;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the cash back amount.
         /// </summary>
         /// <remarks>
@@ -217,7 +260,6 @@ namespace GlobalPayments.Api.Builders {
                 }
             }
             else ClientTransactionId = value;
-
             return this;
         }
 
@@ -374,22 +416,20 @@ namespace GlobalPayments.Api.Builders {
 
         /// <summary>
         /// Sets the Convenience amount; where applicable.
-        /// </summary>       
+        /// </summary>
         /// <param name="value">The Convenience amount</param>
         /// <returns>AuthorizationBuilder</returns>
-        public AuthorizationBuilder WithConvenienceAmount(decimal? value)
-        {
+        public AuthorizationBuilder WithConvenienceAmount(decimal? value) {
             ConvenienceAmount = value;
             return this;
         }
 
         /// <summary>
         /// Sets the Shipping amount; where applicable.
-        /// </summary>        
+        /// </summary>
         /// <param name="value">The Shipping amount</param>
         /// <returns>AuthorizationBuilder</returns>
-        public AuthorizationBuilder WithShippingAmt(decimal? value)
-        {
+        public AuthorizationBuilder WithShippingAmt(decimal? value) {
             ShippingAmt = value;
             return this;
         }
@@ -401,6 +441,16 @@ namespace GlobalPayments.Api.Builders {
         /// <returns>AuthorizationBuilder</returns>
         public AuthorizationBuilder WithHostedPaymentData(HostedPaymentData value) {
             HostedPaymentData = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Field submitted in the request that is used to ensure idempotency is maintained within the action
+        /// </summary>
+        /// <param name="value">The idempotency key</param>
+        /// <returns>AuthorizationBuilder</returns>
+        public AuthorizationBuilder WithIdempotencyKey(string value) {
+            IdempotencyKey = value;
             return this;
         }
 
@@ -421,6 +471,11 @@ namespace GlobalPayments.Api.Builders {
 
         public AuthorizationBuilder WithCommercialData(CommercialData value) {
             CommercialData = value;
+            return this;
+        }
+
+        public AuthorizationBuilder WithLastRegisteredDate(DateTime value) {
+            LastRegisteredDate = value;
             return this;
         }
 
@@ -500,6 +555,11 @@ namespace GlobalPayments.Api.Builders {
 
         public AuthorizationBuilder WithPaymentApplicationVersion(string value) {
             PaymentApplicationVersion = value;
+            return this;
+        }
+
+        public AuthorizationBuilder WithTokenUsageMode(TokenUsageMode? value) {
+            TokenUsageMode = value;
             return this;
         }
 
@@ -620,6 +680,14 @@ namespace GlobalPayments.Api.Builders {
         }
 
         /// <summary>
+        /// Sets the surcharge amount for the transaction.
+        /// </summary>
+        public AuthorizationBuilder WithSurchargeAmount(decimal value) {
+            SurchargeAmount = value;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the related gateway transaction ID; where applicable.
         /// </summary>
         /// <remarks>
@@ -667,12 +735,22 @@ namespace GlobalPayments.Api.Builders {
 
 
         /// <summary>
-        /// Lodging data information for Portico 
+        /// Lodging data information for Portico
         /// </summary>
         /// <param name="value">The lodging data</param>
         /// <returns>AuthorizationBuilder</returns>
         public AuthorizationBuilder WithLodgingData(LodgingData value) {
             LodgingData = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the surcharge amount; where applicable.
+        /// </summary>
+        /// <param name="value">The surcharge amount</param>
+        /// <returns>AuthorizationBuilder</returns>
+        public AuthorizationBuilder WithSurchargeAmount(decimal? value) {
+            SurchargeAmount = value;
             return this;
         }
 
@@ -745,8 +823,6 @@ namespace GlobalPayments.Api.Builders {
 
             Validations.For(TransactionType.Replace).Check(() => ReplacementCard).IsNotNull();
 
-            Validations.For(PaymentMethodType.ACH).Check(() => BillingAddress).IsNotNull();
-
             Validations.For(PaymentMethodType.Debit).When(() => ReversalReasonCode).IsNotNull().Check(() => TransactionType).Equals(TransactionType.Reversal);
 
             Validations.For(PaymentMethodType.Debit | PaymentMethodType.Credit)
@@ -762,6 +838,74 @@ namespace GlobalPayments.Api.Builders {
                 .Check(() => PaymentMethod).IsNotNull();
 
             Validations.For(PaymentMethodType.Recurring).Check(() => ShippingAmt).IsNull();
+        }
+
+        public AuthorizationBuilder WithForceGatewayTimeout(bool value) {
+            ForceGatewayTimeout = value;
+            return this;
+        }
+
+        public AuthorizationBuilder WithFee(FeeType feeType, decimal feeAmount) {
+            FeeType = feeType;
+            FeeAmount = feeAmount;
+
+            return this;
+        }
+
+        public AuthorizationBuilder WithUniqueDeviceId(string value) {
+            UniqueDeviceId = value;
+            return this;
+        }
+
+        public AuthorizationBuilder WithClerkId(string value) {
+            ClerkId = value;
+            return this;
+        }
+
+        public AuthorizationBuilder WithShiftNumber(string value) {
+            ShiftNumber = value;
+            return this;
+        }
+        public AuthorizationBuilder WithTransportData(string value) {
+            TransportData = value;
+            return this;
+        }
+        public AuthorizationBuilder WithBatchNumber(int value) {
+            BatchNumber = value;
+            return this;
+        }
+        public AuthorizationBuilder WithBatchNumber(int batchNumber, int sequenceNumber) {
+            BatchNumber = batchNumber;
+            SequenceNumber = sequenceNumber;
+            return this;
+        }
+        public AuthorizationBuilder WithCompanyId(string value) {
+            CompanyId = value;
+            return this;
+        }
+        public AuthorizationBuilder WithFleetData(FleetData value) {
+            FleetData = value;
+            return this;
+        }
+        public AuthorizationBuilder WithIssuerData(Dictionary<DE62_CardIssuerEntryTag, string> value) {
+            IssuerData = value;
+            return this;
+        }
+        public AuthorizationBuilder WithSystemTraceAuditNumber(int value) {
+            SystemTraceAuditNumber = value;
+            return this;
+        }
+        public AuthorizationBuilder WithTransactionMatchingData(TransactionMatchingData value) {
+            TransactionMatchingData = value;
+            return this;
+        }
+        public AuthorizationBuilder WithChipCondition(EmvLastChipRead value) {
+            EmvChipCondition = value;
+            return this;
+        }
+        public AuthorizationBuilder WithProductData(ProductData value) {
+            ProductData = value;
+            return this;
         }
     }
 }

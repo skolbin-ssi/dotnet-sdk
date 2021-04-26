@@ -1,14 +1,28 @@
 ﻿using GlobalPayments.Api.Entities;
 using GlobalPayments.Api.PaymentMethods;
 using GlobalPayments.Api.Services;
+using GlobalPayments.Api.Tests.Terminals;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 
 namespace GlobalPayments.Api.Tests {
     [TestClass]
     public class PorticoCreditTests {
+        private IncrementalNumberProvider _generator;
+
         CreditCardData card;
         CreditTrackData track;
+        CreditCardData VisaManual { get; set; }
+        CreditCardData MasterCardManual{ get; set; }
+        Address Address { get; set; }
+        string ClientTransactionId {
+            get {
+                if (_generator == null) {
+                    _generator = IncrementalNumberProvider.GetInstance();
+                }
+                return _generator.GetRequestId().ToString();
+            }
+        }
 
         [TestInitialize]
         public void Init() {
@@ -28,6 +42,25 @@ namespace GlobalPayments.Api.Tests {
                 EncryptionData = new EncryptionData {
                     Version = "01"
                 }
+            };
+
+            Address = new Address {
+                StreetAddress1 = "8320",
+                PostalCode = "85284"
+            };
+
+            MasterCardManual = new CreditCardData {
+                Number = "5146315000000055",
+                ExpMonth = 12,
+                ExpYear = 2020,
+                Cvn = "998"
+            };
+
+            VisaManual = new CreditCardData {
+                Number = "4012000098765439",
+                ExpMonth = 12,
+                ExpYear = 2020,
+                Cvn = "999"
             };
         }
 
@@ -74,6 +107,33 @@ namespace GlobalPayments.Api.Tests {
         }
 
         [TestMethod]
+        public void CreditAuthorizationWithCOF()
+        {
+            Transaction response = card.Authorize(14m)
+                .WithCurrency("USD")
+                .WithAllowDuplicates(true)
+                .WithCardBrandStorage(StoredCredentialInitiator.Merchant)
+                .Execute();
+            Assert.IsNotNull(response);
+            Assert.AreEqual("00", response.ResponseCode);
+            Assert.IsNotNull(response.CardBrandTransactionId);
+
+            Transaction cofResponse = card.Authorize(14m)
+                .WithCurrency("USD")
+                .WithAllowDuplicates(true)
+                .WithCardBrandStorage(StoredCredentialInitiator.CardHolder, response.CardBrandTransactionId)
+                .Execute();
+            Assert.IsNotNull(cofResponse);
+            Assert.AreEqual("00", cofResponse.ResponseCode);
+
+            Transaction capture = cofResponse.Capture(16m)
+                .WithGratuity(2m)
+                .Execute();
+            Assert.IsNotNull(capture);
+            Assert.AreEqual("00", capture.ResponseCode);
+        }
+
+        [TestMethod]
         public void CreditSale() {
             var response = card.Charge(15m)
                 .WithCurrency("USD")
@@ -81,6 +141,62 @@ namespace GlobalPayments.Api.Tests {
                 .Execute();
             Assert.IsNotNull(response);
             Assert.AreEqual("00", response.ResponseCode);
+        }
+
+        [TestMethod]
+        public void CreditSaleWithRefund() {
+            var response = card.Charge(15m)
+                .WithCurrency("USD")
+                .WithAllowDuplicates(true)
+                .Execute();
+            Assert.IsNotNull(response);
+            Assert.AreEqual("00", response.ResponseCode);
+
+            var trans = Transaction.FromId(response.TransactionId)
+                .Refund(15m)
+                .WithCurrency("USD")
+                .WithAllowDuplicates(true)
+                .Execute();
+            Assert.IsNotNull(trans);
+            Assert.AreEqual("00", trans.ResponseCode);
+        }
+
+        [TestMethod]
+        public void CreditSaleWithCOF() {
+            var response = card.Charge(15m)
+                .WithCurrency("USD")
+                .WithCardBrandStorage(StoredCredentialInitiator.CardHolder)
+                .WithAllowDuplicates(true)
+                .Execute();
+            Assert.IsNotNull(response);
+            Assert.AreEqual("00", response.ResponseCode);
+            Assert.IsNotNull(response.CardBrandTransactionId);
+
+            Transaction cofResponse = card.Charge(15m)
+                .WithCurrency("USD")
+                .WithCardBrandStorage(StoredCredentialInitiator.Merchant, response.CardBrandTransactionId)
+                .WithAllowDuplicates(true)
+                .Execute();
+            Assert.IsNotNull(cofResponse);
+            Assert.AreEqual("00", cofResponse.ResponseCode);
+        }
+
+        [TestMethod]
+        public void CreditVerifyWithCOF() {
+            Transaction response = card.Verify()
+                .WithAllowDuplicates(true)
+                .WithCardBrandStorage(StoredCredentialInitiator.CardHolder)
+                .Execute();
+            Assert.IsNotNull(response);
+            Assert.AreEqual("00", response.ResponseCode);
+            Assert.IsNotNull(response.CardBrandTransactionId);
+
+            Transaction cofResponse = card.Verify()
+                .WithAllowDuplicates(true)
+                .WithCardBrandStorage(StoredCredentialInitiator.Merchant, response.CardBrandTransactionId)
+                .Execute();
+            Assert.IsNotNull(cofResponse);
+            Assert.AreEqual("00", cofResponse.ResponseCode);
         }
 
         [TestMethod]
@@ -109,6 +225,43 @@ namespace GlobalPayments.Api.Tests {
             TransactionSummary report = ReportingService.TransactionDetail(response.TransactionId).Execute();
             Assert.IsNotNull(report);
             Assert.AreEqual(2m, report.ShippingAmount);
+        }
+
+        [TestMethod]
+        public void CreditSaleWithSurchargeAmount() {
+            var amount = 10m;
+            var response = card.Charge(amount)
+                .WithCurrency("USD")
+                .WithAllowDuplicates(true)
+                .WithSurchargeAmount(amount * .35m)
+                .Execute();
+            Assert.IsNotNull(response);
+            Assert.AreEqual("00", response.ResponseCode);
+
+            TransactionSummary report = ReportingService.TransactionDetail(response.TransactionId).Execute();
+            Assert.IsNotNull(report);
+            Assert.AreEqual(amount * .35m, report.SurchargeAmount);
+        }
+
+        [TestMethod]
+        public void CreditSaleAndEditWithSurchargeAmount() {
+            var amount = 10m;
+            var response = card.Charge(amount)
+                .WithCurrency("USD")
+                .WithAllowDuplicates(true)
+                .Execute();
+            Assert.IsNotNull(response);
+            Assert.AreEqual("00", response.ResponseCode);
+
+            var edit = response.Edit()
+                .WithSurchargeAmount(amount * .35m)
+                .Execute();
+            Assert.IsNotNull(edit);
+            Assert.AreEqual("00", edit.ResponseCode);
+
+            TransactionSummary report = ReportingService.TransactionDetail(response.TransactionId).Execute();
+            Assert.IsNotNull(report);
+            Assert.AreEqual(amount * .35m, report.SurchargeAmount);
         }
 
         [TestMethod]
@@ -376,5 +529,118 @@ namespace GlobalPayments.Api.Tests {
             var token = card.Tokenize("tokenize");
             Assert.IsNotNull(token);
         }
+
+        #region Step 4: LEVEL 3 Enhanced Data Tests
+
+        [TestMethod]
+        public void Visa_Level3_Sale() {
+
+            var commercialData = new CommercialData(TaxType.SALESTAX, CommercialIndicator.Level_III) {
+                PoNumber = "1784951399984509620",
+                TaxAmount = 0.01m,
+                DestinationPostalCode = "85212",
+                DestinationCountryCode = "USA",
+                OriginPostalCode = "22193",
+                SummaryCommodityCode = "SCC",
+                VAT_InvoiceNumber = "UVATREF162",
+                OrderDate = DateTime.Now,
+                FreightAmount = 0.01m,
+                DutyAmount = 0.01m,
+                AdditionalTaxDetails = new AdditionalTaxDetails {
+                    TaxAmount = 0.01m,
+                    TaxRate = 0.04m
+                }
+            };
+            commercialData.AddLineItems(
+                new CommercialLineItem {
+                    ProductCode = "PRDCD1",
+                    UnitCost = 0.01m,
+                    Quantity = 1m,
+                    UnitOfMeasure = "METER",
+                    Description = "PRODUCT 1 NOTES",
+                    // CommodityCode = "12DIGIT ACCO",
+                    DiscountDetails = new DiscountDetails {
+                        DiscountAmount = 0.50m
+                    }
+                },
+                new CommercialLineItem {
+                    ProductCode = "PRDCD2",
+                    UnitCost = 0.01m,
+                    Quantity = 1m,
+                    UnitOfMeasure = "METER",
+                    Description = "PRODUCT 2 NOTES",
+                    // CommodityCode = "12DIGIT ACCO",
+                    DiscountDetails = new DiscountDetails {
+                        DiscountAmount = 0.50m
+                    }
+                }
+            );
+
+            var response = VisaManual.Charge(0.53m)
+                .WithCurrency("USD")
+                .WithCommercialRequest(true)
+                .WithClientTransactionId(ClientTransactionId)
+                .WithAddress(Address)
+                .Execute();
+            Assert.IsNotNull(response);
+            Assert.AreEqual("00", response.ResponseCode);
+
+            var edit = response.Edit()
+                .WithCommercialData(commercialData)
+                .Execute();
+            Assert.IsNotNull(edit);
+            Assert.AreEqual("00", edit.ResponseCode);
+        }
+
+        [TestMethod]
+        public void MasterCard_Level3_Sale() {
+
+            var commercialData = new CommercialData(TaxType.SALESTAX, CommercialIndicator.Level_III) {
+                PoNumber = "9876543210",
+                TaxAmount = 0.01m,
+                DestinationPostalCode = "85212",
+                DestinationCountryCode = "USA",
+                OriginPostalCode = "22193",
+                SummaryCommodityCode = "SCC",
+                VAT_InvoiceNumber = "UVATREF162",
+                OrderDate = DateTime.Now,
+                FreightAmount = 0.01m,
+                DutyAmount = 0.01m,
+                AdditionalTaxDetails = new AdditionalTaxDetails {
+                    TaxAmount = 0.01m,
+                    TaxRate = 0.04m,
+                }
+            };
+            commercialData.AddLineItems(
+                new CommercialLineItem {
+                    ProductCode = "PRDCD1",
+                    UnitCost = 0.01m,
+                    Quantity = 1m,
+                    UnitOfMeasure = "METER",
+                    Description = "PRODUCT 1 NOTES",
+                    // CommodityCode = "12DIGIT ACCO",
+                    DiscountDetails = new DiscountDetails {
+                        DiscountAmount = 0.50m
+                    }
+                }
+            );
+
+            var response = MasterCardManual.Charge(0.53m)
+                .WithCurrency("USD")
+                .WithCommercialRequest(true)
+                .WithClientTransactionId(ClientTransactionId)
+                .WithAddress(Address)
+                .Execute();
+            Assert.IsNotNull(response);
+            Assert.AreEqual("00", response.ResponseCode);
+
+            var edit = response.Edit()
+                .WithCommercialData(commercialData)
+                .Execute();
+            Assert.IsNotNull(edit);
+            Assert.AreEqual("00", edit.ResponseCode);
+        }
+
+        #endregion
     }
 }

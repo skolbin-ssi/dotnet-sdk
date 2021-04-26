@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using GlobalPayments.Api.Entities.Billing;
+using GlobalPayments.Api.Entities.Enums;
 using GlobalPayments.Api.PaymentMethods;
 
 namespace GlobalPayments.Api.Entities {
@@ -15,7 +17,7 @@ namespace GlobalPayments.Api.Entities {
         /// <summary>
         /// Value used to determine the challenge request preference for 3DS2
         /// </summary>
-        public ChallengeRequestIndicator ChallengeRequest { get; set; }
+        public ChallengeRequestIndicator ChallengeRequestIndicator { get; set; }
 
         /// <summary>
         /// The customer's email address
@@ -72,6 +74,26 @@ namespace GlobalPayments.Api.Entities {
         /// The customer's Lastname.
         /// </summary>
         public string CustomerLastName { get; set; }
+
+        /// <summary>
+        /// The customer's Address
+        /// </summary>
+        public Address CustomerAddress { get; set; }
+
+        /// <summary>
+        /// Allows customer information to be editable on hosted page if supported
+        /// </summary>
+        public bool CustomerIsEditable { get; set; }
+
+        /// <summary>
+        /// Type of hosted page payment
+        /// </summary>
+        public HostedPaymentType HostedPaymentType { get; set; }
+
+        /// <summary>
+        /// List of bills for hosted pages
+        /// </summary>
+        public IEnumerable<Bill> Bills { get; set; }
 
         /// <summary>
         /// The Alternative Payment Type is an Array which store

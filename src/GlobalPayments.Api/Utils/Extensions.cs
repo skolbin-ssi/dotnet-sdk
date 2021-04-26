@@ -6,6 +6,7 @@ using GlobalPayments.Api.Entities;
 using GlobalPayments.Api.Terminals;
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Linq;
 
 namespace GlobalPayments.Api.Utils {
     public static class Extensions {
@@ -17,15 +18,12 @@ namespace GlobalPayments.Api.Utils {
             return Regex.Replace(str, "[^0-9]", "");
         }
 
-        public static string ToNumericString(this decimal dec) {
-            return Regex.Replace(dec.ToString(), "[^0-9]", "");
+        public static string ToNumericCurrencyString(this decimal dec) {
+            return Regex.Replace(string.Format("{0:c}", dec), "[^0-9]", "");
         }
 
         public static string ToNumericCurrencyString(this decimal? dec) {
-            if (dec != null) {
-                return Regex.Replace(string.Format("{0:c}", dec), "[^0-9]", "");
-            }   
-            return null;
+            return dec?.ToNumericCurrencyString();
         }
 
         public static string ToCurrencyString(this decimal? dec) {
@@ -205,6 +203,10 @@ namespace GlobalPayments.Api.Utils {
                 rvalue = rvalue.Substring(0, rvalue.Length - trimLength);
             }
             return rvalue;
+        }
+
+        public static string ExtractDigits(this string str) {
+            return string.IsNullOrEmpty(str) ? str : new string(str.Where(char.IsDigit).ToArray());
         }
     }
 }

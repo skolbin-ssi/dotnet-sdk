@@ -1,5 +1,6 @@
 ﻿using GlobalPayments.Api.Entities;
 using GlobalPayments.Api.Logging;
+using System.Net;
 
 namespace GlobalPayments.Api {
     public abstract class Configuration {
@@ -9,6 +10,8 @@ namespace GlobalPayments.Api {
         public Environment Environment { get { return _environment; } set { _environment = value; }  }
 
         public IRequestLogger RequestLogger { get; set; }
+
+        public IWebProxy WebProxy { get; set; }
 
         /// <summary>
         /// Gateway service URL
@@ -23,6 +26,8 @@ namespace GlobalPayments.Api {
         internal bool Validated { get; private set; }
 
         internal abstract void ConfigureContainer(ConfiguredServices services);
+        public bool EnableLogging { get; set; }
+        public bool ForceGatewayTimeout { get; set; }
 
         internal virtual void Validate() {
             Validated = true;

@@ -7,6 +7,11 @@ namespace GlobalPayments.Api.PaymentMethods {
     /// </summary>
     public abstract class Credit : IPaymentMethod, IEncryptable, ITokenizable, IChargable, IAuthable, IRefundable, IReversable, IVerifiable, IPrePaid, IBalanceable, ISecure3d {
         /// <summary>
+        /// The name of the issuing Bank
+        /// </summary>
+        public string BankName { get; set; }
+
+        /// <summary>
         /// The card type of the manual entry data.
         /// </summary>
         /// <remarks>
@@ -40,6 +45,8 @@ namespace GlobalPayments.Api.PaymentMethods {
         public string MobileType { get; set; }
 
         public bool FleetCard { get; set; }
+
+        public bool PurchaseCard { get; set; }
 
         public Credit() {
             CardType = "Unknown";
@@ -127,8 +134,28 @@ namespace GlobalPayments.Api.PaymentMethods {
 
             var response =  new AuthorizationBuilder(type, this)
                 .WithRequestMultiUseToken(verifyCard)
+                .WithTokenUsageMode(TokenUsageMode.Multiple)
                 .Execute(configName);
             return response.Token;
+        }
+
+        /// <summary>
+        /// Detokenizes payment method
+        /// </summary>
+        /// <param name="configName"></param>
+        /// <returns></returns>
+        ITokenizable ITokenizable.Detokenize(string configName) {
+            if (string.IsNullOrEmpty(Token)) {
+                throw new BuilderException("Token cannot be null");
+            }
+
+            var transaction = new ManagementBuilder(TransactionType.Detokenize)
+                .WithPaymentMethod(this)
+                .Execute(configName);
+
+            CardType = transaction.CardType;
+
+            return this;
         }
 
         /// <summary>

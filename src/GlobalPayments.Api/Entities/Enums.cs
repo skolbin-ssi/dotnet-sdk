@@ -53,6 +53,11 @@ namespace GlobalPayments.Api.Entities {
         HPA_ISC250,
 
         /// <summary>
+        /// Indicates a HeartSIP Lane 3000 device
+        /// </summary>
+        HPA_LANE3000,
+
+        /// <summary>
         /// Indicates a genius terminal
         /// </summary>
         GENIUS
@@ -259,31 +264,6 @@ namespace GlobalPayments.Api.Entities {
     }
 
     /// <summary>
-    /// Indicates CVN presence at time of payment.
-    /// </summary>
-    public enum CvnPresenceIndicator {
-        /// <summary>
-        /// Indicates CVN was present.
-        /// </summary>
-        Present = 1,
-
-        /// <summary>
-        /// Indicates CVN was present but illegible.
-        /// </summary>
-        Illegible,
-
-        /// <summary>
-        /// Indicates CVN was not present.
-        /// </summary>
-        NotOnCard,
-
-        /// <summary>
-        /// Indicates CVN was not requested.
-        /// </summary>
-        NotRequested
-    }
-
-    /// <summary>
     /// Indicates the tax type.
     /// </summary>
     public enum TaxType {
@@ -442,12 +422,52 @@ namespace GlobalPayments.Api.Entities {
         /// <summary>
         /// Indicates a deposit report
         /// </summary>
-        FindDepoits = 1 << 8,
+        FindDeposits = 1 << 8,
 
         /// <summary>
         /// Indicates a dispute report
         /// </summary>
-        FindDisputes = 1 << 9
+        FindDisputes = 1 << 9,
+
+        /// <summary>
+        /// Indicates a Deposit Details report.
+        /// </summary>
+        DepositDetail = 1 << 10,
+
+        /// <summary>
+        /// Indicates a Dispute Details report.
+        /// </summary>
+        DisputeDetail = 1 << 11,
+
+        /// <summary>
+        /// Indicates a Settlement Dispute Details report.
+        /// </summary>
+        SettlementDisputeDetail = 1 << 12,
+
+        /// <summary>
+        /// Indicates a Transactions report paged
+        /// </summary>
+        FindTransactionsPaged = 1 << 13,
+
+        /// <summary>
+        /// Indicates a Settlement Transactions report paged
+        /// </summary>
+        FindSettlementTransactionsPaged = 1 << 14,
+
+        /// <summary>
+        /// Indicates a Deposit report paged
+        /// </summary>
+        FindDepositsPaged = 1 << 15,
+
+        /// <summary>
+        /// Indicates a Dispute report paged
+        /// </summary>
+        FindDisputesPaged = 1 << 16,
+
+        /// <summary>
+        /// Indicates a Settlement Dispute report paged
+        /// </summary>
+        FindSettlementDisputesPaged = 1 << 17,
     }
 
     /// <summary>
@@ -842,13 +862,6 @@ namespace GlobalPayments.Api.Entities {
         public const string DECLINED_VOID = "DECLINED SAF VOID SUMMARY";
     }
 
-    public enum ChallengeRequestIndicator {
-        NO_PREFERENCE,
-        NO_CHALLENGE_REQUESTED,
-        CHALLENGE_PREFERRED,
-        CHALLENGE_MANDATED
-    }
-
     internal static class EODCommandType {
         public const string END_OF_DAY = "EOD";
         public const string REVERSAL = "Reversal";
@@ -882,13 +895,7 @@ namespace GlobalPayments.Api.Entities {
         INSTALLMENT_TRANSACTION,
         ADD_CARD,
         MAINTAIN_CARD,
-        CARDHOLDER_VERIFICATION
-    }
-
-    public enum AuthenticationSource {
-        BROWSER,
-        STORED_RECURRING,
-        MOBILE_SDK
+        CARDHOLDER_VERIFICATION,
     }
 
     public enum ChallengeWindowSize {
@@ -936,5 +943,16 @@ namespace GlobalPayments.Api.Entities {
         One,
         Two,
         Any
+    }
+    
+    public enum EbtCardType {
+        CashBenefit,	
+        FoodStamp	
+    }	
+
+    public enum BatchCloseType {	
+        Forced,	
+        EndOfShift,	
+        //EndOfDay	
     }
 }

@@ -16,5 +16,14 @@
         public const string GENIUS_TERMINAL_TEST = "https://transport.merchantware.net/v4/transportService.asmx";
         public const string TRANSIT_MULTIPASS_PRODUCTION = "https://gateway.transit-pass.com/servlets/TransNox_API_Server";
         public const string TRANSIT_MULTIPASS_TEST = "https://stagegw.transnox.com/servlets/TransNox_API_Server";
+        public const string GP_API_PRODUCTION = "https://apis.globalpay.com";
+        public const string GP_API_TEST = "https://apis.sandbox.globalpay.com/ucp";
+        public const string PROPAY_TEST = "https://xmltest.propay.com/API/PropayAPI.aspx";
+        public const string PROPAY_TEST_CANADIAN = "https://xmltestcanada.propay.com/API/PropayAPI.aspx";
+        public const string PROPAY_PRODUCTION = "https://epay.propay.com/API/PropayAPI.aspx";
+        public const string PROPAY_PRODUCTION_CANADIAN = "https://www.propaycanada.ca/API/PropayAPI.aspx";
+        internal const string BILLPAY_TEST = "https://testing.heartlandpaymentservices.net/";
+        public const string BILLPAY_CERTIFICATION = "https://staging.heartlandpaymentservices.net/";
+        public const string BILLPAY_PRODUCTION = "https://heartlandpaymentservices.net/";
     }
 }

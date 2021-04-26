@@ -112,11 +112,16 @@ namespace GlobalPayments.Api.Utils {
                             _et.SubElement(discountDetails, "productDiscountAmount", item.DiscountDetails.DiscountAmount);
                             _et.SubElement(discountDetails, "productDiscountPercentage", item.DiscountDetails.DiscountAmount);
                             _et.SubElement(discountDetails, "productDiscountType", item.DiscountDetails.DiscountAmount);
+                            _et.SubElement(discountDetails, "priority", item.DiscountDetails.DiscountPriority);
+                            _et.SubElement(discountDetails, "stackable", item.DiscountDetails.DiscountIsStackable ? "YES" : "NO");
                         }
 
                         // tax details
                         if (item.TaxAmount != null) {
                             var taxDetails = _et.SubElement(productElement, "productTaxDetails");
+                            _et.SubElement(taxDetails, "productTaxName", item.TaxName);
+                            _et.SubElement(taxDetails, "productTaxAmount", item.TaxAmount.ToCurrencyString());
+                            _et.SubElement(taxDetails, "productTaxPercentage", item.TaxPercentage);
                         }
 
                         _et.SubElement(productElement, "productNotes", item.Description);
@@ -168,6 +173,7 @@ namespace GlobalPayments.Api.Utils {
                     return BuildList("deviceID|transactionKey|manifest|operatingUserID|batchCloseParameter");
                 case TransactionType.Capture:
                     return BuildList("deviceID|transactionKey|manifest|transactionAmount|tip|salesTax|additionalTaxDetails|shippingCharges|dutyCharges|surcharge|additionalAmountType|additionalAmount|additionalAmountSign|transactionID|externalReferenceID|operatorID|isPartialShipment|partialShipmentData|softDescriptor|merchantReportID|customerCode|firstName|lastName|transTotalDiscountAmount|transDiscountName|transDiscountAmount|transDiscountPercentage|priority|stackable|productDetails|productDiscountName|productDiscountAmount|productDicsountPercentage|productDiscountType|priority|stackable|productTaxName|productTaxAmount|productTaxPercentage|productTaxType|productVariation|modifierName|modifierValue|modiferPrice|productNotes|productDiscountIndicator|orderNotes|orderServiceTimestamp|commercialCardLevel|purchaseOrder|chargeDescriptor|customerVATNumber|customerRefID|orderDate|summaryCommodityCode|vatInvoice|chargeDescriptor2|chargeDescriptor3|chargeDescriptor4|supplierReferenceNumber|shipFromZip|shipToZip|destinationCountryCode|developerID|paymentFacilitatorIdentifier|paymentFacilitatorName|subMerchantIdentifier|subMerchantName|subMerchantCountryCode|subMerchantStateCode|subMerchantCity|subMerchantPostalCode|subMerchantEmailId|subMerchantPhone");
+                case TransactionType.Refund:
                 case TransactionType.Reversal:
                 case TransactionType.Void:
                     return BuildList("deviceID|transactionKey|manifest|transactionAmount|tip|salesTax|additionalTaxDetails|shippingCharges|surcharge|currencyCode|transactionID|externalReferenceID|operatorID|tokenRequired|productDetails|productTaxName|productTaxAmount|productTaxPercentage|productVariation|modifierName|modifierValue|modifierPrice|productNotes|developerID|voidReason|laneID|achCancelNote");

@@ -1,4 +1,6 @@
 ﻿using GlobalPayments.Api.Entities;
+using GlobalPayments.Api.Entities.Billing;
+using GlobalPayments.Api.Network.Entities;
 using GlobalPayments.Api.PaymentMethods;
 using System.Collections.Generic;
 
@@ -19,6 +21,7 @@ namespace GlobalPayments.Api.Builders {
                 return null;
             }
         }
+        internal IEnumerable<Bill> Bills { get; set; }
         internal string ClientTransactionId {
             get {
                 if (PaymentMethod is TransactionReference) {
@@ -28,10 +31,15 @@ namespace GlobalPayments.Api.Builders {
             }
         }
         internal CommercialData CommercialData { get; set; }
+        internal decimal? ConvenienceAmount { get; set; }
         internal string Currency { get; set; }
         internal string CustomerId { get; set; }
+        internal string CustomerIpAddress { get; set; }
         internal string Description { get; set; }
+        internal IEnumerable<DisputeDocument> DisputeDocuments { get; set; }
+        internal string DisputeId { get; set; }
         internal decimal? Gratuity { get; set; }
+        internal string IdempotencyKey { get; set;  }
         internal string InvoiceNumber { get; set; }
         internal LodgingData LodgingData { get; set; }
         internal int? MultiCapturePaymentCount { get; set; }
@@ -47,6 +55,7 @@ namespace GlobalPayments.Api.Builders {
         internal string PayerAuthenticationResponse { get; set; }
         internal ReasonCode? ReasonCode { get; set;}
         internal Dictionary<string, List<string[]>> SupplementaryData { get; set; }
+        internal decimal? SurchargeAmount { get; set; }
         internal string TransactionId {
             get {
                 if (PaymentMethod is TransactionReference) {
@@ -55,7 +64,18 @@ namespace GlobalPayments.Api.Builders {
                 return null;
             }
         }
+        internal int TransactionCount { get; set; }
+        internal decimal TotalCredits { get; set; }
+        internal decimal TotalDebits { get; set; }
+        internal string ReferenceNumber { get; set; }
+        internal BatchCloseType BatchCloseType { get; set; }
+        internal decimal? CashBackAmount { get; set; }
+        internal bool ForcedReversal { get; set; }
+        internal bool CustomerInitiated { get; set; }
+        internal string TransportData { get; set; }
+        internal string Timestamp { get; set; }
         internal VoidReason? VoidReason { get; set; }
+        internal bool AllowDuplicates { get; set; }
 
         /// <summary>
         /// Sets the current transaction's amount.
@@ -74,6 +94,16 @@ namespace GlobalPayments.Api.Builders {
         /// <returns>ManagementBuilder</returns>
         public ManagementBuilder WithAuthAmount(decimal? value) {
             AuthAmount = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Adds the bills to the transaction, where applicable
+        /// </summary>
+        /// <param name="values">The transaction's bills</param>
+        /// <returns>AuthorizationBuilder</returns>
+        public ManagementBuilder WithBills(params Bill[] values) {
+            Bills = values;
             return this;
         }
 
@@ -100,6 +130,16 @@ namespace GlobalPayments.Api.Builders {
                 TransactionModifier = TransactionModifier.Level_II;
             }
             else { TransactionModifier = TransactionModifier.Level_III; }
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the Convenience amount; where applicable.
+        /// </summary>
+        /// <param name="value">The Convenience amount</param>
+        /// <returns>AuthorizationBuilder</returns>
+        public ManagementBuilder WithConvenienceAmount(decimal? value) {
+            ConvenienceAmount = value;
             return this;
         }
 
@@ -145,6 +185,26 @@ namespace GlobalPayments.Api.Builders {
         }
 
         /// <summary>
+        /// Sets the dispute documents
+        /// </summary>
+        /// <param name="value">The dispute documents</param>
+        /// <returns>ManagementBuilder</returns>
+        public ManagementBuilder WithDisputeDocuments(IEnumerable<DisputeDocument> value) {
+            DisputeDocuments = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the dispute id
+        /// </summary>
+        /// <param name="value">The dispute id</param>
+        /// <returns>ManagementBuilder</returns>
+        public ManagementBuilder WithDisputeId(string value) {
+            DisputeId = value;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the gratuity amount; where applicable.
         /// </summary>
         /// <remarks>
@@ -159,6 +219,16 @@ namespace GlobalPayments.Api.Builders {
         }
 
         /// <summary>
+        /// Field submitted in the request that is used to ensure idempotency is maintained within the action
+        /// </summary>
+        /// <param name="value">The idempotency key</param>
+        /// <returns>ManagementBuilder</returns>
+        public ManagementBuilder WithIdempotencyKey(string value) {
+            IdempotencyKey = value;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the invoice number; where applicable.
         /// </summary>
         /// <param name="value">The invoice number</param>
@@ -169,7 +239,7 @@ namespace GlobalPayments.Api.Builders {
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="value">string</param>
         /// <returns></returns>
@@ -194,7 +264,7 @@ namespace GlobalPayments.Api.Builders {
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="type"></param>
         /// <param name="values"></param>
@@ -216,18 +286,69 @@ namespace GlobalPayments.Api.Builders {
             return this;
         }
 
+        /// <summary>
+        /// Sets the surcharge amount for the transaction.
+        /// </summary>
+        public ManagementBuilder WithSurchargeAmount(decimal value) {
+            SurchargeAmount = value;
+            return this;
+        }
+
         internal ManagementBuilder WithModifier(TransactionModifier value) {
             TransactionModifier = value;
             return this;
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
         public ManagementBuilder WithAlternativePaymentType(AlternativePaymentType value) {
-            this.AlternativePaymentType = value;
+            AlternativePaymentType = value;
+            return this;
+        }
+        public ManagementBuilder WithCashBackAmount(decimal? value) {
+            CashBackAmount = value;
+            return this;
+        }
+        public ManagementBuilder WithBatchNumber(int batchNumber, int sequenceNumber = 0) {
+            BatchNumber = batchNumber;
+            SequenceNumber = sequenceNumber;
+            return this;
+        }
+        public ManagementBuilder WithBatchCloseType(BatchCloseType value) {
+            BatchCloseType = value;
+            return this;
+        }
+        public ManagementBuilder WithBatchTotals(int transactionCount, decimal totalDebits, decimal totalCredits) {
+            TransactionCount = transactionCount;
+            TotalDebits = totalDebits;
+            TotalCredits = totalCredits;
+
+            return this;
+        }
+        public ManagementBuilder WithTransportData(string value) {
+            TransportData = value;
+            return this;
+        }
+        public ManagementBuilder WithTimestamp(string value) {
+            Timestamp = value;
+            return this;
+        }
+        public ManagementBuilder WithReferenceNumber(string value) {
+            ReferenceNumber = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Allows duplicate transactions by skipping the
+        /// gateway's duplicate checking.
+        /// </summary>
+        /// <param name="value">The duplicate skip flag</param>
+        /// <returns>ManagementBuilder</returns>
+        public ManagementBuilder WithAllowDuplicates(bool value) {
+            AllowDuplicates = value;
             return this;
         }
 
@@ -261,7 +382,7 @@ namespace GlobalPayments.Api.Builders {
 
         protected override void SetupValidations() {
             Validations.For(TransactionType.Capture | TransactionType.Edit | TransactionType.Hold | TransactionType.Release)
-                .Check(() => TransactionId).IsNotNull();
+                .Check(() => PaymentMethod).IsNotNull();
 
             // TODO: Need level validations
             //Validations.For(TransactionType.Edit).With(TransactionModifier.Level_II)
@@ -294,6 +415,26 @@ namespace GlobalPayments.Api.Builders {
                 TransactionType.VerifySignature |
                 TransactionType.Refund)
                 .Check(() => VoidReason).IsNull();
+        }
+        public ManagementBuilder WithForcedReversal(bool value) {
+            ForcedReversal = value;
+            return this;
+        }
+        public ManagementBuilder WithProductData(ProductData value) {
+            ProductData = value;
+            return this;
+        }
+        public ManagementBuilder WithFleetData(FleetData value) {
+            FleetData = value;
+            return this;
+        }
+        public ManagementBuilder WithCustomerInitiated(bool value) {
+            CustomerInitiated = value;
+            return this;
+        }
+        public ManagementBuilder WithForceGatewayTimeout(bool value) {
+            ForceGatewayTimeout = value;
+            return this;
         }
     }
 }

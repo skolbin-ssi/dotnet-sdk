@@ -55,9 +55,30 @@ namespace GlobalPayments.Api {
         /// </summary>
         public string UniqueDeviceId { get; set; }
 
+        /// <summary>
+        /// ProPay CertificationStr Value
+        /// </summary>
+        public string CertificationStr { get; set; }
+
+        /// <summary>
+        /// ProPay TerminalID Value
+        /// </summary>
+        public string TerminalID { get; set; }
+
+        /// <summary>
+        /// ProPay X509 Certificate Location
+        /// </summary>
+        public string X509CertificatePath { get; set; }
+
+        /// <summary>
+        /// If true (default), use the US ProPay endpoints.
+        /// If false, use the Canadian ProPay endpoints
+        /// </summary>
+        public bool ProPayUS { get; set; } = true;
+
         private string PayPlanEndpoint {
             get {
-                if (Environment == Entities.Environment.TEST) {
+                if (SecretApiKey.ToLower().Contains("cert") || (String.IsNullOrEmpty(SecretApiKey) && Environment == Entities.Environment.TEST)) {
                     return "/Portico.PayPlan.v2/";
                 }
                 return "/PayPlan.v2/";
@@ -89,7 +110,8 @@ namespace GlobalPayments.Api {
                 Timeout = Timeout,
                 ServiceUrl = ServiceUrl + "/Hps.Exchange.PosGateway/PosGatewayService.asmx",
                 UniqueDeviceId = UniqueDeviceId,
-                RequestLogger = RequestLogger
+                RequestLogger = RequestLogger,
+                WebProxy = WebProxy
             };
             services.GatewayConnector = gateway;
 
@@ -102,9 +124,32 @@ namespace GlobalPayments.Api {
                 SecretApiKey = SecretApiKey,
                 Timeout = Timeout,
                 ServiceUrl = ServiceUrl + PayPlanEndpoint,
-                RequestLogger = RequestLogger
+                RequestLogger = RequestLogger,
+                WebProxy = WebProxy
             };
             services.RecurringConnector = payplan;
+
+            // ProPay Connector
+            if (CertificationStr != null && CertificationStr.Length > 0) {
+                if (Environment == Entities.Environment.TEST) {
+                    ServiceUrl = ProPayUS ? ServiceEndpoints.PROPAY_TEST : ServiceEndpoints.PROPAY_TEST_CANADIAN;
+                }
+                else {
+                    ServiceUrl = ProPayUS ? ServiceEndpoints.PROPAY_PRODUCTION : ServiceEndpoints.PROPAY_PRODUCTION_CANADIAN;
+                }
+
+                var payFac = new ProPayConnector() {
+                    CertStr = CertificationStr,
+                    TermID = TerminalID,
+                    Timeout = Timeout,
+                    ServiceUrl = ServiceUrl,
+                    X509CertPath = X509CertificatePath,
+                    RequestLogger = RequestLogger,
+                    WebProxy = WebProxy
+                };
+
+                services.PayFacProvider = payFac;
+            }
         }
 
         internal override void Validate() {
