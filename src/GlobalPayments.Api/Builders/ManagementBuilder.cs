@@ -21,6 +21,7 @@ namespace GlobalPayments.Api.Builders {
                 return null;
             }
         }
+        internal string BatchReference { get; set; }
         internal IEnumerable<Bill> Bills { get; set; }
         internal string ClientTransactionId {
             get {
@@ -38,6 +39,7 @@ namespace GlobalPayments.Api.Builders {
         internal string Description { get; set; }
         internal IEnumerable<DisputeDocument> DisputeDocuments { get; set; }
         internal string DisputeId { get; set; }
+        internal string DynamicDescriptor { get; set; }
         internal decimal? Gratuity { get; set; }
         internal string IdempotencyKey { get; set;  }
         internal string InvoiceNumber { get; set; }
@@ -94,6 +96,16 @@ namespace GlobalPayments.Api.Builders {
         /// <returns>ManagementBuilder</returns>
         public ManagementBuilder WithAuthAmount(decimal? value) {
             AuthAmount = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the current batch reference
+        /// </summary>
+        /// <param name="value">The batch reference</param>
+        /// <returns></returns>
+        public ManagementBuilder WithBatchReference(string value) {
+            BatchReference = value;
             return this;
         }
 
@@ -201,6 +213,20 @@ namespace GlobalPayments.Api.Builders {
         /// <returns>ManagementBuilder</returns>
         public ManagementBuilder WithDisputeId(string value) {
             DisputeId = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the transaction's dynamic descriptor.
+        /// </summary>
+        /// <remarks>
+        /// This value is sent during the authorization process and is displayed
+        /// in the consumer's account.
+        /// </remarks>
+        /// <param name="value">The dynamic descriptor</param>
+        /// <returns>AuthorizationBuilder</returns>
+        public ManagementBuilder WithDynamicDescriptor(string value) {
+            DynamicDescriptor = value;
             return this;
         }
 
